@@ -18,7 +18,7 @@ class InventorySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'product', 'sku', 'name', 'category', 'price',
             'warehouse', 'on_hand', 'reserved', 'available',
-            'low_stock_threshold', 'updated_at'
+            'threshold', 'updated_at'
         ]
 
 class InventoryMovementSerializer(serializers.ModelSerializer):

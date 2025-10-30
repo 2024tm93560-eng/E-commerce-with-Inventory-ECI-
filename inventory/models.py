@@ -4,6 +4,8 @@ from datetime import timedelta
 
 MOVEMENT_TYPES = [
     ('RESERVE', 'Reserve'),
+    ('IN', 'Inbound'),
+    ('OUT', 'Outbound'),
     ('RELEASE', 'Release'),
     ('SHIP', 'Ship'),
     ('RESTOCK', 'Restock'),
@@ -11,8 +13,6 @@ MOVEMENT_TYPES = [
     ('WRITE_OFF', 'Write Off'),
     ('RETURN', 'Return'),
 ]
-
-
 
 def default_ttl():
     return timezone.now() + timedelta(minutes=15)
@@ -27,13 +27,12 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.sku} - {self.name}"
 
-
 class Inventory(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     warehouse = models.CharField(max_length=100)
-    on_hand = models.IntegerField()
-    reserved = models.IntegerField()
-    low_stock_threshold = models.IntegerField(default=0)
+    on_hand = models.IntegerField(default=0)
+    reserved = models.IntegerField(default=0)
+    threshold = models.IntegerField(default=5)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -42,6 +41,9 @@ class Inventory(models.Model):
     @property
     def available(self):
         return self.on_hand - self.reserved
+
+    def is_low_stock(self):
+        return self.available < self.threshold
 
 class InventoryMovement(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -55,16 +57,3 @@ class InventoryMovement(models.Model):
     reserved_at = models.DateTimeField(auto_now_add=True)
     ttl_expires_at = models.DateTimeField(default=default_ttl)
     created_at = models.DateTimeField(auto_now_add=True)
-
-
-    class Inventory(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    warehouse = models.CharField(max_length=100)
-    on_hand = models.IntegerField(default=0)
-    reserved = models.IntegerField(default=0)
-    threshold = models.IntegerField(default=5)  # 🔔 Alert if below this
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def is_low_stock(self):
-        return (self.on_hand - self.reserved) < self.threshold
-

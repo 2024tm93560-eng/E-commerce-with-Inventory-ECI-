@@ -1,0 +1,4 @@
+[
+  {"op":"replace","path":"/spec/template/spec/containers/0/command","value":["sh","-c"]},
+  {"op":"add","path":"/spec/template/spec/containers/0/args","value":["python -u /app/src/worker.py || python3 -u /app/src/worker.py"]}
+]

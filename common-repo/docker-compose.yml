@@ -1,0 +1,161 @@
+services:
+  # ===== infra =====
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: eci
+      RABBITMQ_DEFAULT_PASS: eci123
+    ports: ["5673:5672", "15675:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [eci]
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "127.0.0.1:62025:8025"
+      - "127.0.0.1:62026:1025"
+    networks: [eci]
+
+  catalog-db:
+    image: mysql:8.0
+    command: ["mysqld", "--default-authentication-plugin=mysql_native_password"]
+    environment:
+      MYSQL_ROOT_PASSWORD: "S123pass"
+      MYSQL_DATABASE: catalog_db
+      MYSQL_USER: catalog_user
+      MYSQL_PASSWORD: "StrongRoot^!123"
+    volumes:
+      - catalog_mysql:/var/lib/mysql
+    ports:
+      - "33311:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-pcatalog_user"]
+      interval: 5s
+      timeout: 3s
+      retries: 25
+    networks:
+      eci:
+        aliases:
+          - db
+
+  inventory-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: inventory_db
+      MYSQL_USER: inventory_user
+      MYSQL_PASSWORD: "StrongInventory!123"
+    volumes:
+      - inventory_mysql:/var/lib/mysql
+    ports:
+      - "3322:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [eci]
+
+  # ===== orders =====
+  order-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: order_db
+      MYSQL_USER: order_user
+      MYSQL_PASSWORD: "StrongOrder!123"
+    volumes: ["order_mysql:/var/lib/mysql"]
+    ports: ["3321:3306"]
+    healthcheck:
+      test: ["CMD","mysqladmin","ping","-h","127.0.0.1","-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [eci]
+
+  order-app:
+    build: ./services/Eci-order-service
+    environment:
+      DJANGO_SETTINGS_MODULE: "order_service.settings"
+      MYSQL_HOST: order-db
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: order_db
+      MYSQL_USER: order_user
+      MYSQL_PASSWORD: "StrongOrder!123"
+      RABBIT_URL: "amqp://eci:eci123@rabbitmq:5672/"
+      RABBITMQ_URL: "amqp://eci:eci123@rabbitmq:5672/%2F" # default vhost "/"
+      ORDERS_EXCHANGE: "orders.x"          # <-- add
+      ORDERS_ROUTING_KEY: "order.confirmed" # <-- add
+      EMAIL_HOST: "mailhog"
+      EMAIL_PORT: "1025"
+      DEBUG: "true"
+      NOTIFY_URL: "http://notification:8001/order-confirmed"   #connected with Notification Service - ERK
+      WEBHOOK_TOKEN: "dev-secret"   # must match notification’s token- ERK
+    depends_on:
+      order-db: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    command: ["sh","-lc","python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+    ports: ["127.0.0.1:55830:8000"]
+    volumes:
+      - ./services/Eci-order-service/data:/app/data:ro
+      - ./services/Eci-order-service/staticfiles:/app/staticfiles
+      - ./services/Eci-order-service/seed_data:/app/seed_data:ro   # <-- add this
+    networks: [eci]
+
+  # ===== notification (HTTP) =====
+  notification:
+    build: ./services/ECI-notification-service
+    container_name: eci-notification
+    env_file:
+      - ./services/ECI-notification-service/.env
+    environment:
+      RABBITMQ_URL: "amqp://eci:eci123@rabbitmq:5672/%2F"   # override any bad creds
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    command: ["sh","-lc","python app.py"]
+    ports:
+      - "55901:8001"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import sys,urllib.request; sys.exit(0) if urllib.request.urlopen('http://localhost:8001/health', timeout=3).getcode()==200 else sys.exit(1)\""]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - eci
+
+  notification-worker:
+    build: ./services/ECI-notification-service
+    container_name: eci-notification-worker
+    command: ["python","-m","src.worker"]
+    environment:
+      RABBITMQ_URL: "amqp://eci:eci123@rabbitmq:5672/%2F"
+      ORDERS_EXCHANGE: "orders.x"
+      ORDERS_ROUTING_KEY: "order.confirmed"
+      NOTIFY_QUEUE: "notifications.q"
+      SMTP_HOST: "mailhog"
+      SMTP_PORT: "1025"
+      MAIL_FROM: "no-reply@eci.local"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - eci
+
+volumes:
+  catalog_mysql: {}
+  order_mysql: {}
+  inventory_mysql: {}
+  rabbitmq_data:
+
+networks:
+  eci: {}

@@ -1,0 +1,8 @@
+services:
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: eci-mailhog
+    ports:
+      # Bind to localhost only, and let Docker choose a free host port
+      - "127.0.0.1::8025"   # Web UI (random host port -> container 8025)
+      - "127.0.0.1::1025"   # SMTP   (random host port -> container 1025)

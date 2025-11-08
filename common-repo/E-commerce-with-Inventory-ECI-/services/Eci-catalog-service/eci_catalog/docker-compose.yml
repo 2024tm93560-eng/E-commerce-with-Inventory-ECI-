@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  db:
+    image: mysql:8.0
+    container_name: eci_catalog_db
+    environment:
+      MYSQL_ROOT_PASSWORD: pass
+      MYSQL_DATABASE: catalogdb
+      MYSQL_USER: catalog_user
+      MYSQL_PASSWORD: pass
+    ports:
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password --sql-mode=STRICT_TRANS_TABLES
+    volumes:
+      - ./_dbdata:/var/lib/mysql

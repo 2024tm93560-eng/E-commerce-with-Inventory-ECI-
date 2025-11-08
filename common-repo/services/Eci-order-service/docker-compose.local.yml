@@ -1,0 +1,61 @@
+services:
+  order-db:
+    image: mysql:8.0
+    container_name: eci-order-db
+    environment:
+      MYSQL_DATABASE: order_db
+      MYSQL_USER: order_user
+      MYSQL_PASSWORD: StrongOrder!123
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - order_mysql_data:/var/lib/mysql
+    ports:
+      - "3321:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  order-app:
+    build: .
+    container_name: eci-order-app
+    env_file:
+      - .env
+    environment:
+      ORDER_STORAGE_BACKEND: csv
+      ORDER_CSV_DIR: /app/data
+      ECI_CSV_ORDERS: /app/data/eci_orders.csv
+      ECI_CSV_ORDER_ITEMS: /app/data/eci_order_items.csv
+      MYSQL_HOST: order-db
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: order_db
+      MYSQL_USER: order_user
+      MYSQL_PASSWORD: StrongOrder!123
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672//
+      ORDERS_EXCHANGE: orders.x
+      ORDERS_ROUTING_KEY: order.confirmed
+    depends_on:
+      order-db:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data:ro
+      - ./staticfiles:/app/staticfiles        # optional, to persist collected static
+    ports:
+      - "55830:8000"
+    command: >
+      sh -c "
+        python manage.py collectstatic --noinput &&  
+        python manage.py makemigrations orders &&
+        python manage.py migrate &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  order_mysql_data:
+  

@@ -1,0 +1,13 @@
+@'
+spec:
+  template:
+    spec:
+      containers:
+      - name: api
+        command:
+        - python
+        args:
+        - manage.py
+        - runserver
+        - 0.0.0.0:8000
+'@ | Set-Content D:\common-repo\payment-cmd-patch.yaml

@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eci-dashboard
+  namespace: eci
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eci-dashboard
+  template:
+    metadata:
+      labels:
+        app: eci-dashboard
+    spec:
+      containers:
+        - name: eci-dashboard
+          image: eci-dashboard:latest   # will patch to a new tag after build
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5090
+          env:
+            - name: CATALOG_BASE
+              value: "http://catalog-api:8000"
+            - name: CATALOG_HEALTH
+              value: "/v1/catalog/products/"
+            - name: ORDER_BASE
+              value: "http://order-api:8000"
+            - name: ORDER_HEALTH
+              value: "/v1/orders/"
+            - name: PAYMENT_BASE
+              value: "http://payment-api:8000"
+            - name: PAYMENT_HEALTH
+              value: "/api/v1/payments/"
+            - name: INVENTORY_BASE
+              value: "http://inventory-api:8000"
+            - name: INVENTORY_HEALTH
+              value: "/v1/inventory/"
+            - name: RABBIT_API
+              value: "http://rabbitmq:15672/api"
+            - name: RABBIT_VHOST
+              value: "%2F"
+            - name: RABBIT_EXCHANGE
+              value: "orders.x"
+            - name: RABBIT_QUEUE
+              value: "notifications.q"
+            - name: RABBIT_USER
+              value: "apiuser"
+            - name: RABBIT_PASS
+              value: "apipass"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5090
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5090
+            initialDelaySeconds: 15
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eci-dashboard
+  namespace: eci
+spec:
+  selector:
+    app: eci-dashboard
+  ports:
+    - name: http
+      port: 5090
+      targetPort: 5090
+      protocol: TCP
+  type: ClusterIP

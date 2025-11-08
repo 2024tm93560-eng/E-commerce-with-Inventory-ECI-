@@ -1,0 +1,35 @@
+services:
+  db:
+    image: mysql:8.0
+      environment:
+      MYSQL_DATABASE: eci_catalog
+      MYSQL_USER: catalog_user
+      MYSQL_PASSWORD: StrongRoot!123
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3307:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-pStrongRoot!123", "-u", "catalog_user", "-h", "127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 25
+
+  catalog:
+    build: .
+    env_file: .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - target: 8000       # container port
+        published: 0       # let Docker choose any free host port
+        protocol: tcp
+        mode: host
+
+volumes:
+  dbdata:

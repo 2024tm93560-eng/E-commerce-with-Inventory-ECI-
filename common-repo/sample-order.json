@@ -1,0 +1,12 @@
+{
+  "event": "order.confirmed",
+  "idempotencyKey": "order-12345-v1",
+  "orderId": 12345,
+  "orderNumber": "ECI-2025-000123",
+  "customer": { "email": "alice@example.com", "name": "Alice" },
+  "total": 199.99,
+  "currency": "USD",
+  "items": [
+    { "sku": "AX77", "name": "Astrox 77", "qty": 1, "price": 179.99 }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "orderId": "e28e3639-44f6-4bb5-8641-c0b065555c97",
+  "customer_id": 1,
+  "customer_email": "cust516@mail.com",
+  "totalAmount": "4028.04",
+  "currency": "QAR",
+  "paymentMethod": "card"
+}

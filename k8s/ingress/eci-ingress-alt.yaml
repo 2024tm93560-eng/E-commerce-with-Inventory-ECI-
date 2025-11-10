@@ -1,0 +1,62 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: eci-ingress-alt
+  namespace: eci
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: "/$2"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: eci-alt.local
+      http:
+        paths:
+          - path: ^/catalog(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: catalog-api
+                port: { number: 8000 }
+
+          - path: ^/orders(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: order-api
+                port: { number: 8000 }
+
+          - path: ^/payment(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: payment-api
+                port: { number: 8000 }
+
+          - path: ^/inventory(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: inventory-api
+                port: { number: 8000 }
+
+          - path: ^/dashboard(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: eci-dashboard
+                port: { number: 5090 }
+
+          - path: ^/rabbitmq(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: rabbitmq
+                port: { number: 15672 }
+
+          - path: ^/mailhog(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: mailhog
+                port: { number: 8025 }

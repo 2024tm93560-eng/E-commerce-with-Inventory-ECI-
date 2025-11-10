@@ -1,0 +1,4 @@
+[
+  {"op":"add","path":"/spec/template/spec/containers/0/command","value":["sh","-lc"]},
+  {"op":"add","path":"/spec/template/spec/containers/0/args","value":["python manage.py runserver 0.0.0.0:8000"]}
+]

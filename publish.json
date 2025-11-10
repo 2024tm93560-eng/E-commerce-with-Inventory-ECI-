@@ -1,0 +1,6 @@
+{
+  "properties": {},
+  "routing_key": "order.confirmed",
+  "payload_encoding": "string",
+  "payload": "{\"event\":\"order.confirmed\",\"order_id\":\"ORD-TEST-1\",\"customer\":{\"email\":\"charan2k03@gmail.com\",\"name\":\"Charan\"},\"items\":[{\"product_id\":\"SKU-1001\",\"qty\":2,\"unit_price\":84.5}],\"totals\":{\"subtotal\":169.0,\"discounts_total\":0,\"total\":169.0,\"currency\":\"USD\"},\"timestamp\":\"2025-11-05T08:30:00Z\"}"
+}

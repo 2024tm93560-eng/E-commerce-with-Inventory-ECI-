@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: eci-apis
+  namespace: eci
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: eci.local
+    http:
+      paths:
+      - path: /catalog
+        pathType: Prefix
+        backend: { service: { name: catalog-api,        port: { number: 8000 } } }
+      - path: /order
+        pathType: Prefix
+        backend: { service: { name: order-api,          port: { number: 8000 } } }
+      - path: /payment
+        pathType: Prefix
+        backend: { service: { name: payment-api,        port: { number: 8000 } } }
+      - path: /inventory
+        pathType: Prefix
+        backend: { service: { name: inventory-api,      port: { number: 8000 } } }
+      - path: /notify
+        pathType: Prefix
+        backend: { service: { name: notification-api,   port: { number: 8000 } } }
+      - path: /mailhog
+        pathType: Prefix
+        backend: { service: { name: mailhog,            port: { number: 8025 } } }

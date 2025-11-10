@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-api
+  namespace: eci
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventory-api
+  template:
+    metadata:
+      labels:
+        app: inventory-api
+    spec:
+      containers:
+        - name: api
+          image: eci/inventory:local
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DEBUG
+              value: "true"
+            - name: ALLOWED_HOSTS
+              value: "*"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-api
+  namespace: eci
+spec:
+  selector:
+    app: inventory-api
+  ports:
+    - port: 8000
+      targetPort: 8000
